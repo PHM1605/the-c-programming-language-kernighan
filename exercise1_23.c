@@ -4,7 +4,7 @@
 #define MAXLINE 1000
 
 int get_code(char code[]) {
-    int i;
+    int i=0;
     int c;
     while(i<MAXLINE && (c=getchar()) != EOF) {
         code[i++] = c;
@@ -13,37 +13,39 @@ int get_code(char code[]) {
     return i;
 }
 
-void remove_comments(char code[], char clean_code[], int len_orig) {
+void remove_comments(char code[], char clean_code[]) {
     int c, k, i=0, j=0;
+    bool inside_comment_oneline = false;
+    bool inside_comment_multiline = false;
     while((c=code[i]) != '\0') {
         if (c=='/') {
-            // when exceed the last char
-            if (i+3 == len_orig) {
-                clean_code[j++] = c;
-            } else {
-                if (code[i+1] == '/') {
-                    while((c=code[++i]) != '\0' && c != '\n') {}
-                } else if (code[i+1] == '*') {
-                    i=i+2;
-                    for(int k=i; !(code[k]=='*' && code[k+1]=='/'); k++) {}
-                    i=k;
-                }
+            if (code[i+1] == '/') {
+                inside_comment_oneline = true;
+                i++;
+            } else if (code[i+1] == '*') {
+                inside_comment_multiline = true;
+                i++;
             }
-        } else {
-            clean_code[j++] = c;
+        } else if (c=='\n' && inside_comment_oneline ) {
+            inside_comment_oneline = false;
+        } else if (c=='*' && code[i+1]=='/' && inside_comment_multiline) {
+            inside_comment_multiline = false;
             i++;
-        }
-        
+        } else {
+            if ((!inside_comment_oneline) && (!inside_comment_multiline)) {
+                clean_code[j++] = c;
+            }            
+        }     
+        i++;   
     }
-    clean_code[i] = '\0';
+    clean_code[j] = '\0';
 }
 
 int main() {
     char code[MAXLINE];
     char clean_code[MAXLINE];
-    int len_orig; // length of original text
-    len_orig = get_code(code);
-    remove_comments(code, clean_code, len_orig);
+    get_code(code);
+    remove_comments(code, clean_code);
     printf("%s", clean_code);
     return 0;
 }
