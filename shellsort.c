@@ -9,7 +9,6 @@ void shellsort(int v[], int n) {
         for (i=gap; i<n; i++) {
             for (j=i-gap; j>=0 && v[j]>v[j+gap]; j-=gap) {
                 // swap v[j] and v[j+gap]
-                printf("%d %d\n", i, j);
                 temp = v[j];
                 v[j] = v[j+gap];
                 v[j+gap] = temp;
