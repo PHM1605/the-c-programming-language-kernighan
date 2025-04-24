@@ -13,12 +13,17 @@ while (next operator or operand is not EOF)
         error
 */
 // try by typing: 1 2 - 4 5 + * => should be -9
+// Exercise 4-3: add % operator and support negative numbers e.g. 1 -2 + 6 4 % + => 1
+// Exercise 4-4: add the commands to print the stack elements, duplicate stack elements, swap top two elements, clear the stack e.g. 1 2 3 4, then 'la', 'dup', 'swap', 'clear'
+// Exercise 4-5: add 'sin', 'exp', 'pow'
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 #define MAXOP 100   // max length of string containing operand/operator
 #define NUMBER '0' // signal that a number was found 
+#define COMMAND '1' // signal that a command was found
 #define MAXVAL 100 // stack maximum #elements
 #define BUFSIZE 100 // to 'get' and 'unget' a character
 
@@ -44,10 +49,26 @@ int getop(char s[]) {
     int i; // to fill the resulting string
     int c; // get the next char, either from buffer or getchar()
     while((s[0] = c = getch()) == ' ' || c=='\t'); // consuming all spaces, to ensure we are getting a number, an operand or '\n' to end
+    int ret;
     s[1] = '\0';
+    i = 0;
+    if (c=='-') {
+        if (isdigit(c=getch())) {
+            ungetch(c);
+            while (isdigit(s[++i] = c = getch()));
+            s[i] = '\0';
+            return NUMBER;
+        } else { // a space => this is an operand
+            c = '-'; 
+        }            
+    }
+    if (isalpha(c))  {
+        while (isalpha(s[++i] = c = getch()));    
+        s[i] = '\0';
+        return COMMAND;   
+    }
     if (!isdigit(c) && c!='.')
         return c; // not a number
-    i = 0;
     if (isdigit(c))
         while (isdigit(s[++i] = c = getch()));
     if (c=='.')
@@ -85,6 +106,42 @@ int main() {
             case NUMBER:
                 push(atof(s));
                 break;
+            case COMMAND:
+                // list all components
+                if (strcmp(s, "la")==0) {
+                    if (sp==0){
+                        printf("Empty stack\n");
+                    } else {
+                        for (int i =0; i<sp; i++) {
+                            printf("%.2g ", val[i]);
+                        }
+                        putchar('\n');
+                    }                    
+                } 
+                // duplicate what inside stack
+                else if (strcmp(s, "dup")==0) {
+                    int current_free_loc = sp;
+                    for (int i = 0; i<current_free_loc; i++) {
+                        push(val[i]);
+                    }
+                    printf("Done duplicate\n");
+                } 
+                // swap the last two components
+                else if (strcmp(s, "swap") == 0 && sp>=2) {
+                    double tmp = pop();
+                    double tmp2 = pop();
+                    push(tmp);
+                    push(tmp2);
+                    printf("Done swapping\n");
+                }
+                // clear all 
+                else if (strcmp(s, "clear") == 0) {
+                    sp = 0;
+                    printf("Done clearing stack\n");
+                } else {
+                    printf("error: invalid command\n");
+                } 
+                break;
             case '+':
                 push(pop() + pop());
                 break;
@@ -101,6 +158,13 @@ int main() {
                     push(pop() / op2);
                 else
                     printf("error: zero divisor\n");
+                break;
+            case '%':
+                op2 = pop();
+                if (op2 <= 0)
+                    printf("error: module operator <=0\n");
+                else 
+                    push((int)pop() % (int)op2);
                 break;
             case '\n':
                 printf("\t%.8g\n", pop());
