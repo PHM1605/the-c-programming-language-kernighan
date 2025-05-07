@@ -20,12 +20,13 @@ while (next operator or operand is not EOF)
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <math.h>
 
 #define MAXOP 100   // max length of string containing operand/operator
 #define NUMBER '0' // signal that a number was found 
 #define COMMAND '1' // signal that a command was found
 #define MAXVAL 100 // stack maximum #elements
-#define BUFSIZE 100 // to 'get' and 'unget' a character
+#define BUFSIZE 100 // to 'get' and 'unget' a characte
 
 double val[MAXVAL]; // stack
 int sp = 0; // next free stack position
@@ -69,10 +70,14 @@ int getop(char s[]) {
     }
     if (!isdigit(c) && c!='.')
         return c; // not a number
+
+		// reading a number...
     if (isdigit(c))
         while (isdigit(s[++i] = c = getch()));
-    if (c=='.')
+    // ... or float
+		if (c=='.')
         while (isdigit(s[++i] = c = getch()));
+
     s[i] = '\0';
     if (c!=EOF)
         ungetch(c);
@@ -138,10 +143,24 @@ int main() {
                 else if (strcmp(s, "clear") == 0) {
                     sp = 0;
                     printf("Done clearing stack\n");
-                } else {
-                    printf("error: invalid command\n");
                 } 
-                break;
+                else if (strcmp(s, "sin") == 0) {
+                        push(sin(pop()));
+                }
+                else if (strcmp(s, "cos") == 0) {
+                        push(cos(pop()));
+                }
+                else if (strcmp(s, "exp") == 0) {
+                        push(exp(pop()));
+                } 
+                else if (strcmp(s, "pow") == 0) {
+                        op2 = pop();
+                        push(pow(pop(), op2));
+                }
+                else {
+                    printf("error: invalid command\n");
+                }
+				break;
             case '+':
                 push(pop() + pop());
                 break;
