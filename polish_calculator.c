@@ -41,7 +41,7 @@ int bufp = 0; // next free buffer position
 
 // for exercise 4.6
 double variables[16];
-double recent = 0.0f;
+double recent = 0.0;
 
 int getch(void) {
     return (bufp > 0) ? buf[--bufp] : getchar();
@@ -142,6 +142,7 @@ int main() {
                         printf("Empty stack\n");
                     } else {
                         for (int i =0; i<sp; i++) {
+                            recent = val[i];
                             printf("%.2g ", val[i]);
                         }
                         putchar('\n');
@@ -182,7 +183,7 @@ int main() {
                         push(pow(pop(), op2));
                 }
                 else if (strcmp(s, "last") == 0) {
-                    printf("Last printed: %.8g\n", recent);
+                    printf("Last printed: %.2g\n", recent);
                 }
                 else {
                     printf("error: invalid command\n");
@@ -214,7 +215,7 @@ int main() {
                 break;
             case '\n':
                 recent = pop();
-                printf("\t%.8g\n", recent);
+                printf("\t%.2g\n", recent);
                 break;
 
             case VAR:
