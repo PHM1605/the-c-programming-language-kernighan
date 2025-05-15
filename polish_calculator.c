@@ -17,12 +17,9 @@ while (next operator or operand is not EOF)
 // Exercise 4-4: add the commands to print the stack elements, duplicate stack elements, swap top two elements, clear the stack e.g. 1 2 3 4, then 'la', 'dup', 'swap', 'clear'
 // Exercise 4-5: add 'sin', 'exp', 'pow'
 /* Exercise 4-6: Add commands for handling variables (provide 26 variables with single-letter names). Add a variable for the most recently printed value. 
-5 A = //assign value A=5
-3 B = //assign value B=3
-A B + //compute A+B
-\n //print 8
-
+Usage: 5 A = 3 B = A B +\n //assign A=5, B=3, A+B yields 8
 */
+// Exercise 4-7 write 'ungets(s) that will push back an entire string onto the input 
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -32,6 +29,7 @@ A B + //compute A+B
 #define MAXOP 100   // max length of string containing operand/operator
 #define NUMBER '0' // signal that a number was found 
 #define COMMAND '1' // signal that a command was found
+#define VAR '2' // signal that a variable was initiated
 #define MAXVAL 100 // stack maximum #elements
 #define BUFSIZE 100 // to 'get' and 'unget' a characte
 
@@ -74,6 +72,14 @@ int getop(char s[]) {
             c = '-'; 
         }            
     }
+
+    // reading a-z
+    if (isupper(c)) {
+        s[0] = c;
+        s[1] = '\0';
+        return VAR;
+    }
+
     if (isalpha(c))  {
         while (isalpha(s[++i] = c = getch()));    
         s[i] = '\0';
@@ -89,12 +95,7 @@ int getop(char s[]) {
 		if (c=='.')
         while (isdigit(s[++i] = c = getch()));
 
-    // reading A-Z
-    if (isupper(c)) {
-        s[0] = c;
-        s[1] = '\0';
-        return c;
-    }
+    
 
     s[i] = '\0';
     if (c!=EOF)
@@ -123,6 +124,11 @@ int main() {
     int type; // operator or operand or EOF
     double op2; // what being pulled from the stack
     char s[MAXOP]; 
+
+    // initiate array that stores variables
+    for (int i=0; i<16; i++) {
+        variables[i] = 0;
+    }
 
     while((type = getop(s)) != EOF) {
         switch(type) {
@@ -210,21 +216,27 @@ int main() {
                 recent = pop();
                 printf("\t%.8g\n", recent);
                 break;
+
+            case VAR:
+                if (variables[s[0]-'A'] > 0) {
+                    push(variables[s[0]-'A']);
+                } else {
+                    push((double)s[0]);
+                }                
+                break;
+
             case '=':
-                double value = pop(); // variable value e.g. 5
-                int varname = pop(); // variable name in terms of char e.g. 'A'
+                int varname = pop(); // variable name e.g. 'A'
+                int value = pop(); // variable value e.g. 5
                 if (varname >= 'A' && varname <= 'Z') {
                     variables[varname-'A'] = value;
                 } else {
                     printf("error: invalid variable name\n");
                 }
+                break;
 
             default:
-                if (type>='A' && type<='Z') {
-                    push(variables[type-'A']);
-                } else {
-                    printf("error: unknown command %s\n", s);
-                }                
+                printf("error: unknown command %s\n", s);
                 break;
         }
     }
