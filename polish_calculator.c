@@ -16,6 +16,13 @@ while (next operator or operand is not EOF)
 // Exercise 4-3: add % operator and support negative numbers e.g. 1 -2 + 6 4 % + => 1
 // Exercise 4-4: add the commands to print the stack elements, duplicate stack elements, swap top two elements, clear the stack e.g. 1 2 3 4, then 'la', 'dup', 'swap', 'clear'
 // Exercise 4-5: add 'sin', 'exp', 'pow'
+/* Exercise 4-6: Add commands for handling variables (provide 26 variables with single-letter names). Add a variable for the most recently printed value. 
+5 A = //assign value A=5
+3 B = //assign value B=3
+A B + //compute A+B
+\n //print 8
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -33,6 +40,10 @@ int sp = 0; // next free stack position
 
 char buf[BUFSIZE]; // buffer
 int bufp = 0; // next free buffer position
+
+// for exercise 4.6
+double variables[16];
+double recent = 0.0f;
 
 int getch(void) {
     return (bufp > 0) ? buf[--bufp] : getchar();
@@ -71,12 +82,19 @@ int getop(char s[]) {
     if (!isdigit(c) && c!='.')
         return c; // not a number
 
-		// reading a number...
+	// reading a number...
     if (isdigit(c))
         while (isdigit(s[++i] = c = getch()));
     // ... or float
 		if (c=='.')
         while (isdigit(s[++i] = c = getch()));
+
+    // reading A-Z
+    if (isupper(c)) {
+        s[0] = c;
+        s[1] = '\0';
+        return c;
+    }
 
     s[i] = '\0';
     if (c!=EOF)
@@ -157,6 +175,9 @@ int main() {
                         op2 = pop();
                         push(pow(pop(), op2));
                 }
+                else if (strcmp(s, "last") == 0) {
+                    printf("Last printed: %.8g\n", recent);
+                }
                 else {
                     printf("error: invalid command\n");
                 }
@@ -186,10 +207,24 @@ int main() {
                     push((int)pop() % (int)op2);
                 break;
             case '\n':
-                printf("\t%.8g\n", pop());
+                recent = pop();
+                printf("\t%.8g\n", recent);
                 break;
+            case '=':
+                double value = pop(); // variable value e.g. 5
+                int varname = pop(); // variable name in terms of char e.g. 'A'
+                if (varname >= 'A' && varname <= 'Z') {
+                    variables[varname-'A'] = value;
+                } else {
+                    printf("error: invalid variable name\n");
+                }
+
             default:
-                printf("error: unknown command %s\n", s);
+                if (type>='A' && type<='Z') {
+                    push(variables[type-'A']);
+                } else {
+                    printf("error: unknown command %s\n", s);
+                }                
                 break;
         }
     }
