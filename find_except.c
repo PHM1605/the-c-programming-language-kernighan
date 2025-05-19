@@ -1,5 +1,7 @@
 // find -nx pattern -> print lines that don't match pattern, preceding with line number
 #include <stdio.h>
+#include <string.h>
+#define MAXLINE 1000
 
 int getline(char s[], int lim) {
     int c, i=0;
@@ -11,13 +13,15 @@ int getline(char s[], int lim) {
     return i;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     char line[MAXLINE];
     long lineno = 0;
+    // except: flag -x or not; number: flag -n or not
     int c, except = 0, number = 0, found = 0;
 
+    // - (in '-nx')
     while(--argc>0 && (*++argv)[0] == '-') {
-        // -nx
+        // nx (in '-nx')
         while (c = *++argv[0]) {
             switch(c) {
             case 'x':
@@ -40,8 +44,14 @@ int main() {
     else
         while (getline(line, MAXLINE) > 0) {
             lineno++;
-            if((strstr(line, *argv)))
+            // print only when (find-substr & not-except) OR (substr-not-found & except) 
+            if((strstr(line, *argv) != NULL) != except) {
+                if (number)
+                    printf("%ld: ", lineno);
+                printf("%s", line);
+                found++;
+            }
         }
 
-    return 0;
+    return found;
 }
