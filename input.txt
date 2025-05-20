@@ -1,0 +1,4 @@
+This    is  an  example line.
+Short   line.
+    Indented    with    spaces.
+Column     alignment     test.
