@@ -124,7 +124,7 @@ int mstrcmp(void* a, void* b) {
 // qsort: sort v[left]...v[right] into increasing order
 void mqsort(void* v[], int left, int right, int (*comp)(void*, void*)) {
     int i, last;
-    printf("ABC: %d %d\n", left, right);
+    printf("ABC: %s %s %d %d\n", v[left], v[right], left, right);
 
     void swap(void* v[], int i, int j) {
         void* temp; 
