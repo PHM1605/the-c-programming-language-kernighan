@@ -1,0 +1,3 @@
+delta 3 cat
+alpha 1 bat
+beta  2 apple

@@ -54,7 +54,7 @@ int readlines(char* lineptr[]) {
         if (nlines >= MAXLINES || (p = alloc(len)) == NULL)
             return -1;
         else {
-            line[len-1] = '\0'; // delete newling
+            line[len-1] = '\0'; // delete newline '\m'
             strcpy(p, line);
             lineptr[nlines++] = p;
         }
