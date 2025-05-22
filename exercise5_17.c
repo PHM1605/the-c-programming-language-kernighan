@@ -66,9 +66,11 @@ void writelines(char* lineptr[], int nlines) {
 }
 
 char* get_field(char* line, int field_num) {
-    static char field[MAXLEN]; // field being processed
+    // printf("getfield-S: %s\n", line);
+    
     int count = 0; // which field number on a line we are processing?
     while(*line) {
+        
         // consume white spaces
         while(*line && isspace((unsigned char)* line)) line++;
         if (*line == '\0') break;
@@ -78,69 +80,87 @@ char* get_field(char* line, int field_num) {
         while(*line && !isspace((unsigned char)* line)) line++;
         count++; // as field counting from 1, not 0
         if (count == field_num) {
+            char* field = (char*) malloc(MAXLEN); // field being processed
             int len = line - start;
             strncpy(field, start, len);
             field[len] = '\0';
+            printf("field return: %s\n", field);
             return field;
         }
     }
-    return ""; // field not found
+    return NULL; // field not found
 }
 
 // a here is a pointer to a pointer to string e.g. "23"
 int numcmp(void* a, void* b) {
     char* s1 = *(char **)a;
     char* s2 = *(char **)b;
+    char* field1;
+    char* field2;
+    
     if (key_field > 0) {
-        s1 = get_field(s1, key_field);
-        s2 = get_field(s2, key_field);
+        field1 = get_field(s1, key_field);
+        field2 = get_field(s2, key_field);
+        double v1 = atof(field1);
+        double v2 = atof(field2);
+        if (field1 != NULL)
+            free(field1);
+        if (field2 != NULL)
+            free(field2);
+        if (v1 < v2) return reverse ? 1: -1;
+        if (v1 > v2) return reverse ? -1 : 1;
+        return 0;
+    } else {
+        printf("ERROR: field must be >=1\n");
+        return -99;
     }
-    printf("S1: %s\n", s1);
-    printf("S2: %s\n", s2);
-    double v1 = atof(s1);
-    double v2 = atof(s2);
-    if (v1 < v2) return reverse ? 1: -1;
-    if (v1 > v2) return reverse ? -1 : 1;
-    return 0;
+    
 }
 
 // same signature as above, but to a string e.g."dog"
 int mstrcmp(void* a, void* b) {
     char* s1 = *(char**)a;
     char* s2 = *(char**)b;
+    char* field1;
+    char* field2;
     if (key_field > 0) {
-        s1 = get_field(s1, key_field);
-        s2 = get_field(s2, key_field);
-    }
-    for(; *s1 && *s2; s1++, s2++) {
-        char c1 = fold ? tolower((unsigned char)*s1) : *s1;
-        char c2 = fold ? tolower((unsigned char)*s2) : *s2;
-        if (c1 != c2)
-            return reverse ? c2-c1 : c1-c2;
-    }
-    return reverse ? *s2 - *s1 : *s1- *s2;
+        field1 = get_field(s1, key_field);
+        field2 = get_field(s2, key_field);
+        for(; *field1 && *field2; field1++, field2++) {
+            char c1 = fold ? tolower((unsigned char)*field1) : *field1;
+            char c2 = fold ? tolower((unsigned char)*field2) : *field2;
+            if (c1 != c2)
+                return reverse ? c2-c1 : c1-c2;
+        }
+        return reverse ? *field2 - *field1 : *field1- *field2;
+    } else {
+        printf("ERROR: field must be >=1\n");
+        return -99;
+    }    
+}
+
+void swap(void* v[], int i, int j) {
+    void* temp; 
+    temp = v[i];
+    v[i] = v[j];
+    v[j] = temp;
 }
 
 // qsort: sort v[left]...v[right] into increasing order
 void mqsort(void* v[], int left, int right, int (*comp)(void*, void*)) {
     int i, last;
-    printf("ABC: %s %s %d %d\n", v[left], v[right], left, right);
-
-    void swap(void* v[], int i, int j) {
-        void* temp; 
-        temp = v[i];
-        v[i] = v[j];
-        v[j] = temp;
-    }
-
     if (left >= right)
         return;
     swap(v, left, (left+right)/2);
     last = left;
     for (i=left+1; i<=right; i++) {
-        printf("DEF: %d %d %s %s\n", i, left, v[i], v[left]);
-        if ((*comp)(&v[i], &v[left]) < 0)
+        if ((*comp)(&v[i], &v[left]) < 0) {
+            printf("SWAP\n");
             swap(v, ++last, i);
+        } else {
+            printf("NO SWAP\n");
+        }
+            
     }
     swap(v, left, last);
     mqsort(v, left, last-1, comp);
