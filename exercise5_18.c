@@ -17,6 +17,7 @@ void dcl(void);
 void dirdcl(void);
 
 enum {NAME, PARENS, BRACKETS};
+
 int tokentype; // type of last token
 char token[MAXTOKEN]; // last token value
 char name[MAXTOKEN]; // name of function e.g. "getx"
@@ -36,6 +37,7 @@ int gettoken() {
             buf[bufp++] = c;
     }
     char* p = token;
+
     // skipping white spaces
     while((c=getch()) == ' ' || c=='\t');
     if (c == '(') {
@@ -65,9 +67,6 @@ void dcl(void) {
     // count # of * 
     for(ns = 0; gettoken()=='*'; ) ns++;
     dirdcl();
-
-    if (tokentype=='\n' || tokentype==EOF)
-        return;
     
     while(ns-->0)
         strcat(out, " pointer to");
@@ -80,7 +79,12 @@ void dirdcl(void) {
         dcl();
         if (tokentype != ')') {
             printf("error: missing )\n");
-            recover();
+            // discard input until the end
+            while(tokentype != '\n' && tokentype !=EOF) {
+                gettoken();
+                
+            }
+            out[0]= '\0';
             return;
         }
             
@@ -89,9 +93,7 @@ void dirdcl(void) {
     else if (tokentype==NAME) 
         strcpy(name, token);
     else {
-        printf("error: expected name of (dcl)\n");
-        recover();
-        return;
+        printf("error: expected name or (dcl)\n");
     }
         
 
@@ -105,12 +107,7 @@ void dirdcl(void) {
         }
 }
 
-void recover(void) {
-    int c;
-    while((c=getchar()) != '\n' && c!=EOF); // discard the rest of input
-    if (c=='\n')
-        ungetch(c);
-}
+
 
 int main() {
     while(gettoken() != EOF) {
@@ -119,9 +116,7 @@ int main() {
         dcl(); // parse the rest of the line
         if (tokentype != '\n') {
             printf("syntax error\n");
-            recover(); // discard remaining input
         }
-            
         printf("%s: %s %s\n", name, out, datatype);
     }
     return 0;

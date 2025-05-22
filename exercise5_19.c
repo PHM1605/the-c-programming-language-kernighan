@@ -1,8 +1,7 @@
-// convert word descriptions to declarations
-// e.g. "x is a function returning a pointer to an array of pointers to functions returning char"
-// -> getx () * [] * () char
-// -> output: char (*(*getx())[])()
-// ./undcl < undcl_input.txt
+// modify dcl.c so that it does not add redundant parenthesis to declaration
+// x * char => char*x instead of char(*x)
+// x * () char => char (*x)()
+// ./a < exercise5_19_input.txt
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -57,17 +56,29 @@ int gettoken() {
 int main() {
     int type;
     char temp[1000];
+    int prevtoken;
 
     while(gettoken() != EOF) {
+        prevtoken = NAME; // first token is always NAME
         strcpy(out, token);
         printf("%s", out); // getx
         while((type = gettoken()) != '\n')
-            if (type==PARENS || type==BRACKETS)
+            if (type==PARENS || type==BRACKETS) {
+                if (prevtoken == '*') {
+                    sprintf(temp, "(%s)", out);
+                    strcpy(out, temp);
+                }
                 strcat(out, token);
+                prevtoken = type;
+            }
+                
             else if (type=='*') {
-                sprintf(temp, "(*%s)", out);
+                prevtoken = '*';
+                sprintf(temp, "*%s", out);
                 strcpy(out, temp);
-            } else if (type==NAME) {
+            } 
+            // type at 1st position
+            else if (type==NAME) {
                 sprintf(temp, "%s %s", token, out);
                 strcpy(out, temp);
             } else 
