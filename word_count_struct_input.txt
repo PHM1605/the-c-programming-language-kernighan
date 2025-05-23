@@ -1,0 +1,13 @@
+#include <stdio.h> // include standard library
+
+// This is a sample C program
+int main() {
+    char *str = "const char* inside string";
+    const int value = 10;
+    /* comment with keyword: while */
+    while (value > 0) {
+        value--;
+    }
+
+    return 0;
+}
