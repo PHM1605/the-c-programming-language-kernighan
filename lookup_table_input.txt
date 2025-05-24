@@ -1,0 +1,4 @@
+#define PI 3.14
+#define MAX 100
+PI * r * r 
+MAX
