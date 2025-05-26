@@ -15,7 +15,7 @@ double val[MAXVAL];
 
 void push(double f) {
     if (sp < MAXVAL) 
-        val[sp++] = f;
+        val[sp++] = f; 
     else 
         printf("error: stack full, can't push%g\n", f);
 }

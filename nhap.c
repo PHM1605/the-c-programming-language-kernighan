@@ -1,85 +1,15 @@
-#include <stdio.h>
-#include <stdlib.h>  // for atof
-#include <ctype.h>   // for isdigit
-#include <string.h>  // for strcmp
-
-#define MAXOP 100     // max size of operand or operator
-#define NUMBER '0'    // signal that a number was found
-#define MAXVAL 100    // maximum depth of val stack
-
-int sp = 0;           // next free stack position
-double val[MAXVAL];   // value stack
-
-void push(double f) {
-    if (sp < MAXVAL)
-        val[sp++] = f;
-    else
-        printf("error: stack full, can't push %g\n", f);
+int isupper_fast(unsigned char c) {
+    static const char table[256] = {
+        ['A'] = 1, ['B'] = 1, ['C'] = 1, ['D'] = 1, ['E'] = 1,
+        ['F'] = 1, ['G'] = 1, ['H'] = 1, ['I'] = 1, ['J'] = 1,
+        ['K'] = 1, ['L'] = 1, ['M'] = 1, ['N'] = 1, ['O'] = 1,
+        ['P'] = 1, ['Q'] = 1, ['R'] = 1, ['S'] = 1, ['T'] = 1,
+        ['U'] = 1, ['V'] = 1, ['W'] = 1, ['X'] = 1, ['Y'] = 1,
+        ['Z'] = 1
+    };
+    return table[c];
 }
 
-double pop(void) {
-    if (sp > 0)
-        return val[--sp];
-    else {
-        printf("error: stack empty\n");
-        return 0.0;
-    }
-}
-
-int getop(char *s) {
-    if (scanf("%s", s) == EOF)
-        return EOF;
-
-    // Check if it's a number
-    char* endptr;
-    double d = strtod(s, &endptr);
-    if (endptr != s && *endptr == '\0') // full conversion
-        return NUMBER;
-
-    return s[0]; // return operator
-}
-
-int main() {
-    char s[MAXOP];
-    int type;
-    double op2;
-
-    printf("Enter RPN expressions (e.g. `3 4 +`):\n");
-
-    while ((type = getop(s)) != EOF) {
-        switch (type) {
-        case NUMBER:
-            push(atof(s));
-            break;
-        case '+':
-            push(pop() + pop());
-            break;
-        case '*':
-            push(pop() * pop());
-            break;
-        case '-':
-            op2 = pop();
-            push(pop() - op2);
-            break;
-        case '/':
-            op2 = pop();
-            if (op2 != 0.0)
-                push(pop() / op2);
-            else
-                printf("error: zero divisor\n");
-            break;
-        case '\n':
-            printf("\t%.8g\n", pop());
-            break;
-        default:
-            printf("error: unknown command %s\n", s);
-            break;
-        }
-    }
-
-    // Print final result
-    if (sp > 0)
-        printf("Result: %.8g\n", pop());
-
-    return 0;
+int isupper_compact(int c) {
+    return c >= 'A' && c <= 'Z';
 }
