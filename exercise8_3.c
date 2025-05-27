@@ -1,6 +1,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 #define PERMS 0666
 #define OPEN_MAX 20 // max number of files open at once
 #define _READ 01
@@ -111,18 +113,18 @@ int _flushbuf(int c, MFILE* fp) {
     return (unsigned char) c;
 }
 
-int fflush(MFILE* fp) {
+int mfflush(MFILE* fp) {
     if (fp == NULL) return 0; // ignore NULL
     if ((fp->flag & _WRITE) == 0) return 0; // ignore if we are not writing
     // write buffer leftovers to file
     return _flushbuf(EOF, fp) == EOF ? EOF : 0;
 }
 
-int fclose(MFILE* fp) {
+int mfclose(MFILE* fp) {
     if (fp==NULL) return EOF;
     int result = 0;
     if (fp->flag & _WRITE) 
-        result = fflush(fp);
+        result = mfflush(fp);
     
     // free the connection between file-descriptor & the file
     if (close(fp->fd) == -1) result = EOF;
@@ -138,9 +140,9 @@ int fclose(MFILE* fp) {
 #define putchar(x,p) putc((x), stdout)
 
 int main() {
-    MFILE* in = mfopen("input.txt", "r");
-    MFILE* out = mfopen("output.txt", "w");
-    return 0;
+    MFILE* in = mfopen("exercise8_3_input.txt", "r");
+    MFILE* out = mfopen("exercise8_3_output.txt", "w");
+    
     if (!in || !out) {
         write(2, "Error opening files\n", 21);
         return 1;
@@ -149,7 +151,7 @@ int main() {
     while((c = getc(in)) != EOF)
         putc(c, out);
     
-    fclose(in);
-    fclose(out);
+    mfclose(in);
+    mfclose(out);
     return 0;
 }

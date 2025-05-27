@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #define PERMS 0666
 #define OPEN_MAX 20 // max number of files open at once
 
@@ -31,7 +32,7 @@ MFILE* mfopen(char* name, char* mode) {
     if (*mode!='r' && *mode!='w' && *mode!='a')
         return NULL;
     for (fp = _iob; fp<_iob+OPEN_MAX; fp++)
-        if((fp->flag & (_READ|_WRITE)) == 0) break; // found free slot
+        if(!fp->is_read && !fp->is_write) break; // found free slot
     if (fp >= _iob + OPEN_MAX)
         return NULL; // too many files opened
     
@@ -49,7 +50,12 @@ MFILE* mfopen(char* name, char* mode) {
     fp->fd = fd;
     fp->cnt = 0; // the next call to getch() => see cnt=0 then trigger _fillbuf
     fp->base = NULL;
-    fp->flag = (*mode=='r') ? _READ : _WRITE;
+    fp->ptr = NULL;
+    fp->is_unbuf = 0;
+    fp->is_eof = 0;
+    fp->is_err = 0;
+    fp->is_read = (*mode=='r');
+    fp->is_write = (*mode!='r');
     return fp;
 }
 
@@ -57,10 +63,10 @@ MFILE* mfopen(char* name, char* mode) {
 int _fillbuf(MFILE* fp) {
     int bufsize;
     // if _EOF or _ERR or _READ not triggered => return 0 to show error
-    if ((fp->flag&(_READ|_EOF|_ERR)) != _READ)
+    if (!fp->is_read || fp->is_eof || fp->is_err)
         return EOF;
     // if flag of _UNBUF is on -> return 1
-    bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+    bufsize = fp->is_unbuf ? 1 : BUFSIZ;
     // if buffer is uninitialized
     if (fp->base == NULL)
         if ((fp->base = (char*) malloc(bufsize)) == NULL)
@@ -69,9 +75,9 @@ int _fillbuf(MFILE* fp) {
     fp->cnt = read(fp->fd, fp->ptr, bufsize);
     if (--fp->cnt < 0) {
         if (fp->cnt == -1)
-            fp->flag |= _EOF;
+            fp->is_eof = 1;
         else 
-            fp->flag |= _ERR;
+            fp->is_err = 1;
         fp->cnt = 0;
         return EOF;
     }
@@ -81,7 +87,7 @@ int _fillbuf(MFILE* fp) {
 // (optional) allocate buffer; 
 int _flushbuf(int c, MFILE* fp) {
     int bufsize;
-    if(!fp->iswrite || fp->is_err || fp->is_eof)
+    if(!fp->is_write || fp->is_err || fp->is_eof)
         return EOF;
     
     bufsize = fp->is_unbuf ? 1 : BUFSIZ;
@@ -111,17 +117,17 @@ int _flushbuf(int c, MFILE* fp) {
     return (unsigned char) c;
 }
 
-int fflush(MFILE* fp) {
+int mfflush(MFILE* fp) {
     if (fp == NULL || !fp->is_write) return 0;
     // write buffer leftovers to file
     return _flushbuf(EOF, fp) == EOF ? EOF : 0;
 }
 
-int fclose(MFILE* fp) {
+int mfclose(MFILE* fp) {
     if (fp==NULL) return EOF;
     int result = 0;
     if (fp->is_write) 
-        result = fflush(fp);
+        result = mfflush(fp);
     
     // free the connection between file-descriptor & the file
     if (close(fp->fd) == -1) result = EOF;
@@ -146,8 +152,8 @@ int fclose(MFILE* fp) {
 
 int main() {
     MFILE* in = mfopen("exercise8_2_input.txt", "r");
-    MFILE* out = mfopen("exercise8_2_input.txt", "w");
-    return 0;
+    MFILE* out = mfopen("exercise8_2_output.txt", "w");
+    
     if (!in || !out) {
         write(2, "Error opening files\n", 21);
         return 1;
@@ -156,7 +162,7 @@ int main() {
     while((c = getc(in)) != EOF)
         putc(c, out);
     
-    fclose(in);
-    fclose(out);
+    mfclose(in);
+    mfclose(out);
     return 0;
 }
