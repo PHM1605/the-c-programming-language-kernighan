@@ -1,15 +1,63 @@
-int isupper_fast(unsigned char c) {
-    static const char table[256] = {
-        ['A'] = 1, ['B'] = 1, ['C'] = 1, ['D'] = 1, ['E'] = 1,
-        ['F'] = 1, ['G'] = 1, ['H'] = 1, ['I'] = 1, ['J'] = 1,
-        ['K'] = 1, ['L'] = 1, ['M'] = 1, ['N'] = 1, ['O'] = 1,
-        ['P'] = 1, ['Q'] = 1, ['R'] = 1, ['S'] = 1, ['T'] = 1,
-        ['U'] = 1, ['V'] = 1, ['W'] = 1, ['X'] = 1, ['Y'] = 1,
-        ['Z'] = 1
-    };
-    return table[c];
+int fclose(MFILE* fp) {
+    if (fp == NULL)
+        return EOF;
+
+    int result = 0;
+    if (fp->flag & _WRITE)
+        result = fflush(fp);
+
+    if (close(fp->fd) == -1)
+        result = EOF;
+
+    if (fp->base)
+        free(fp->base);
+
+    fp->cnt = 0;
+    fp->ptr = NULL;
+    fp->base = NULL;
+    fp->flag = 0;
+    fp->fd = -1;
+
+    return result;
 }
 
-int isupper_compact(int c) {
-    return c >= 'A' && c <= 'Z';
+int fflush(MFILE* fp) {
+    if (fp == NULL)
+        return 0; // ignore NULL
+    if ((fp->flag & _WRITE) == 0)
+        return 0;
+
+    return _flushbuf(EOF, fp) == EOF ? EOF : 0;
+}
+
+int _flushbuf(int c, MFILE* fp) {
+    int bufsize;
+
+    if ((fp->flag & _WRITE) == 0 || (fp->flag & (_ERR | _EOF)))
+        return EOF;
+
+    bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+
+    if (fp->base == NULL) {
+        // Allocate buffer if not yet allocated
+        if ((fp->base = (char*) malloc(bufsize)) == NULL) {
+            fp->flag |= _ERR;
+            return EOF;
+        }
+    } else {
+        // Write existing buffer to file
+        int n = fp->ptr - fp->base;
+        if (write(fp->fd, fp->base, n) != n) {
+            fp->flag |= _ERR;
+            return EOF;
+        }
+    }
+
+    fp->cnt = (fp->flag & _UNBUF) ? 0 : bufsize - 1;
+    fp->ptr = fp->base;
+    if (c != EOF) {
+        *fp->ptr++ = c;
+    }
+
+    return (unsigned char) c;
 }
