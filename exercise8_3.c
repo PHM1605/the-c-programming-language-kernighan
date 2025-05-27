@@ -53,6 +53,7 @@ MFILE* mfopen(char* name, char* mode) {
     return fp;
 }
 
+// (optional) allocate buffer; fill the buffer; get the char from buffer 
 int _fillbuf(MFILE* fp) {
     int bufsize;
     // if _EOF or _ERR or _READ not triggered => return 0 to show error
@@ -77,6 +78,7 @@ int _fillbuf(MFILE* fp) {
     return (unsigned char) *(fp->ptr++);
 } 
 
+// (optional) allocate buffer; 
 int _flushbuf(int c, MFILE* fp) {
     int bufsize;
     if((fp->flag & _WRITE) == 0 || (fp->flag & (_ERR | _EOF)))
@@ -91,14 +93,47 @@ int _flushbuf(int c, MFILE* fp) {
             return EOF;
         }
     } 
-    // Write existing buffer to file
+    // Write buffer to file
     else {
-        
+        int n = fp->ptr - fp->base;
+        // file description, destination buffer, #written bytes
+        if (write(fp->fd, fp->base, n) != n) {
+            fp->flag |= _ERR;
+            return EOF;
+        }
     }
+    // Buffer here empty in all cases => cnt = bufsize-1 free slots available, after we put 'c' in
+    fp->cnt = (fp->flag & _UNBUF) ? 0 : bufsize-1;
+    fp->ptr = fp->base;
+    if (c != EOF) {
+        *fp->ptr++ = c; // write that character to buffer
+    }
+    return (unsigned char) c;
 }
 
+int fflush(MFILE* fp) {
+    if (fp == NULL) return 0; // ignore NULL
+    if ((fp->flag & _WRITE) == 0) return 0; // ignore if we are not writing
+    // write buffer leftovers to file
+    return _flushbuf(EOF, fp) == EOF ? EOF : 0;
+}
+
+int fclose(MFILE* fp) {
+    if (fp==NULL) return EOF;
+    int result = 0;
+    if (fp->flag & _WRITE) 
+        result = fflush(fp);
+    
+    // free the connection between file-descriptor & the file
+    if (close(fp->fd) == -1) result = EOF;
+    free(fp->base);
+    return result;
+}
+
+// get a char from buffer OR fill buffer with chars from file then take one out
 #define getc(p) (--(p)->cnt >= 0 ? (unsigned char)*(p)->ptr++ : _fillbuf(p))
 #define getchar() getc(stdin)
+// insert a char on the buffer OR if the buffer is full; begin writing to file
 #define putc(x,p) (--(p)->cnt >=0 ?  *(p)->ptr++ = (x) : _flushbuf((x), p))
 #define putchar(x,p) putc((x), stdout)
 

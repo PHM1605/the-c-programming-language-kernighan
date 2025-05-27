@@ -26,7 +26,7 @@ int fflush(MFILE* fp) {
         return 0; // ignore NULL
     if ((fp->flag & _WRITE) == 0)
         return 0;
-
+    // write buffer leftovers to file
     return _flushbuf(EOF, fp) == EOF ? EOF : 0;
 }
 
