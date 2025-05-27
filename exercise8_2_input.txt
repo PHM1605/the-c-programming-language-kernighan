@@ -1,0 +1,2 @@
+This is a test line.
+Which must be copied to an output file.
