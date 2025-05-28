@@ -3,7 +3,8 @@
     "files.associations": {
         "stdio.h": "c",
         "string.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "random": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
