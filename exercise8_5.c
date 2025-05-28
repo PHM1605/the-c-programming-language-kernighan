@@ -1,6 +1,4 @@
-// Program: prints the sizes of all files named in its command line argument list
-// if an argument is a directory, print recursively that dir
-// if no argument, print the current directory
+// Program: fsize.c program with additional information
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,6 +7,10 @@
 #include "dirent.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <pwd.h> // for getpwuid()
+#include <grp.h> // for getgrgid()
+#include <time.h> // for ctime()
+
 #define MAX_PATH 1024
 
 // create a pointer to a DIR object, init 'fd' of it, but 'Dirent' of it is still empty (will be injected in 'readdir')
@@ -86,7 +88,55 @@ void fsize(char* name) {
     // if directory then walk recursively
     if ((stbuf.st_mode & S_IFMT) == S_IFDIR)
         dirwalk(name, fsize);
-    printf("%8ld %s\n", stbuf.st_size, name);
+
+    // File type
+    char* type;
+    switch (stbuf.st_mode & S_IFMT) {
+        case S_IFREG: type="regular"; break;
+        case S_IFDIR: type="directory"; break;
+        case S_IFLNK: type="symlink"; break;
+        case S_IFCHR: type="char device"; break;
+        case S_IFBLK: type="block device"; break;
+        case S_IFIFO: type="FIFO"; break;
+        case S_IFSOCK: type="socket"; break;
+        default: type="uknown"; break;
+    }
+
+    // Permissions string
+    char perms[11];
+    perms[0] = S_ISDIR(stbuf.st_mode) ? 'd' : '-';
+    perms[1] = (stbuf.st_mode & S_IRUSR) ? 'r' : '-';
+    perms[2] = (stbuf.st_mode & S_IWUSR) ? 'w' : '-';
+    perms[3] = (stbuf.st_mode & S_IXUSR) ? 'x' : '-'; 
+    perms[4] = (stbuf.st_mode & S_IRGRP) ? 'r' : '-';
+    perms[5] = (stbuf.st_mode & S_IWGRP) ? 'w' : '-';
+    perms[6] = (stbuf.st_mode & S_IXGRP) ? 'x' : '-';
+    perms[7] = (stbuf.st_mode & S_IROTH) ? 'r' : '-';
+    perms[8] = (stbuf.st_mode & S_IWOTH) ? 'w' : '-';
+    perms[9] = (stbuf.st_mode & S_IXOTH) ? 'x' : '-';
+    perms[10] = '\0';
+
+    // Get user and group names
+    struct passwd* pw = getpwuid(stbuf.st_uid);
+    struct group* gr = getgrgid(stbuf.st_gid);
+    char* user = pw ? pw->pw_name : "unknown";
+    char* group = gr ? gr->gr_name : "unknown";
+
+    printf("%8ld %s %s %3ld %s %s %s", 
+        stbuf.st_size, // file size
+        perms, // permission
+        type, // file type
+        (long)stbuf.st_nlink, // #hard links
+        user, 
+        group, 
+        name);
+    
+    // print modification time
+    char* mtime = ctime(&stbuf.st_mtime);
+    if (mtime[strlen(mtime)-1] == '\n') {
+        mtime[strlen(mtime)-1] = '\0';
+        printf(" [%s]\n", mtime);
+    }
 }
 
 int main(int argc, char** argv) {
