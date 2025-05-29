@@ -113,7 +113,7 @@ int main() {
     printf("p3->name = %s\n", p3->name);
 
     printf("\nFreeing p1...\n");
-    free(p1);
+    mfree(p1);
 
 
     return 0;
