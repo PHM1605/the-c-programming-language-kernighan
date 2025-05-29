@@ -1,4 +1,4 @@
-// [base | big-empty-block | used-p3 | used-p2 | used-p1]
+// bfree(p,n): manually add an arbitrary block 'p' of size 'n'
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -21,6 +21,11 @@ static Header* freep = NULL; // start of free list, which is the most recently-m
 
 // ap: pointer to multiple-Header-size payload
 void mfree(void* ap) {
+    if (freep == NULL) {
+        base.s.ptr = freep = &base;
+        base.s.size = 0;
+    }
+
     Header *p; // returned value; use this to change the value of global 'freep'
     Header *bp = (Header*)ap - 1; // pointer to block header, of the block being freed
     // find the location making bp between p and p-next -> proceeding out
@@ -92,39 +97,43 @@ void* mmalloc(unsigned nbytes) {
     }
 }
 
-typedef struct {
-    int id;
-    char name[20];
-} Person;
+int bfree(void* p, unsigned n) {
+    Header* bp;
+    // n must be at least enough to store a Header
+    if (n < sizeof(Header)) return 0;
+
+    bp = (Header*) p;
+    bp->s.size = n / sizeof(Header);
+    mfree((void*)(bp+1));
+    return 1;
+}
+
+#define STATIC_BYTES 2048
+static char static_buf[STATIC_BYTES];
 
 int main() {
-    printf("Allocating 3 persons...\n");
-    Person* p1 = (Person*) mmalloc(sizeof(Person));
-    Person* p2 = (Person*) mmalloc(sizeof(Person));
-    Person* p3 = (Person*) mmalloc(sizeof(Person));
-    printf("p1 = %p\n", (void*)p1);
-    printf("p2 = %p\n", (void*)p2);
-    printf("p3 = %p\n", (void*)p3);
+    printf("Adding static_buf to empty free list...\n");
+    // Creating 2048 bytes
+    if (bfree(static_buf, STATIC_BYTES)) {
+        printf("Static buffer successfully added to the free list.\n");
+    } else {
+        printf("Failed to add static buffer. Size too small.\n");
+        return 1;
+    }
 
-    strcpy(p1->name, "Alice");
-    strcpy(p2->name, "Bob");
-    strcpy(p3->name, "Charlie");
-    printf("p1->name = %s\n", p1->name);
-    printf("p2->name = %s\n", p2->name);
-    printf("p3->name = %s\n", p3->name);
+    // Occupying 200 bytes at the end of 2048 bytes => 1848 free bytes
+    printf("Trying to allocate 200 bytes using mmalloc...\n");
+    void* ptr = mmalloc(200);
+    if (ptr) {
+        printf("mmalloc(200) succeeded. Address: %p\n", ptr);
+        memset(ptr, 0xAB, 200); // fill with pattern to test
+    } else {
+        printf("mmalloc(200) failed.\n");
+        return 1;
+    }
 
-    printf("\n=== Freeing p2 and p1 ===\n");
-    mfree(p2);
-    mfree(p1);
+    printf("Freeing 200 bytes...\n");
+    mfree(ptr); // return 200 bytes back => stack returns to 2048 bytes
 
-    printf("\n=== Allocating another (should reuse space) ===\n");
-    Person* p4 = (Person*) mmalloc(sizeof(Person));
-    printf("p4 = %p\n", (void*)p4);
-    strcpy(p4->name, "Diana");
-    printf("p4->name = %s\n", p4->name);
-
-    printf("\n=== Freeing remaining blocks ===\n");
-    mfree(p3);
-    mfree(p4);
     return 0;
 }

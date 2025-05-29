@@ -1,7 +1,7 @@
-// [base | big-empty-block | used-p3 | used-p2 | used-p1]
+// calloc() returns a pointer to 'n' objects of size 'size'
 #include <stdio.h>
 #include <unistd.h>
-#include <string.h>
+#include <string.h> // for memset()
 
 #define NALLOC 1024 // we will request from OS at least NALLOC units
 
@@ -92,39 +92,27 @@ void* mmalloc(unsigned nbytes) {
     }
 }
 
-typedef struct {
-    int id;
-    char name[20];
-} Person;
+void* mcalloc(unsigned n, unsigned size) {
+    unsigned total = n * size;
+    
+    // Guard against integer overflow
+    if (n!=0 && total/n != size) return NULL;
+
+    void* ptr = mmalloc(total);
+    if (ptr) {
+        memset(ptr, 0, total); // zero out the memory
+    }
+    return ptr;
+}
 
 int main() {
-    printf("Allocating 3 persons...\n");
-    Person* p1 = (Person*) mmalloc(sizeof(Person));
-    Person* p2 = (Person*) mmalloc(sizeof(Person));
-    Person* p3 = (Person*) mmalloc(sizeof(Person));
-    printf("p1 = %p\n", (void*)p1);
-    printf("p2 = %p\n", (void*)p2);
-    printf("p3 = %p\n", (void*)p3);
-
-    strcpy(p1->name, "Alice");
-    strcpy(p2->name, "Bob");
-    strcpy(p3->name, "Charlie");
-    printf("p1->name = %s\n", p1->name);
-    printf("p2->name = %s\n", p2->name);
-    printf("p3->name = %s\n", p3->name);
-
-    printf("\n=== Freeing p2 and p1 ===\n");
-    mfree(p2);
-    mfree(p1);
-
-    printf("\n=== Allocating another (should reuse space) ===\n");
-    Person* p4 = (Person*) mmalloc(sizeof(Person));
-    printf("p4 = %p\n", (void*)p4);
-    strcpy(p4->name, "Diana");
-    printf("p4->name = %s\n", p4->name);
-
-    printf("\n=== Freeing remaining blocks ===\n");
-    mfree(p3);
-    mfree(p4);
+    int* arr = (int*) mcalloc(10, sizeof(int));
+    if (arr) {
+        printf("\nTesting calloc:\n");
+        for (int i=0; i<10; i++) {
+            printf("arr[%d] = %d\n", i, arr[i]); // should all be '0'
+        }
+    }
+    mfree(arr);
     return 0;
 }

@@ -4,7 +4,8 @@
         "stdio.h": "c",
         "string.h": "c",
         "cstdlib": "c",
-        "random": "c"
+        "random": "c",
+        "unistd.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

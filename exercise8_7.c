@@ -1,4 +1,6 @@
 // [base | big-empty-block | used-p3 | used-p2 | used-p1]
+// ...but this problem: add error checking for mmalloc() 
+// check malloc(n); n has valid values
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -65,6 +67,14 @@ void* mmalloc(unsigned nbytes) {
 
     // request more #units from OS
     Header* morecore(unsigned);
+
+    // ERROR CHECKING for number of bytes requrired
+    // 1U << 30 = 0100.... (30 zeros) = 1GB request
+    if (nbytes==0 || nbytes > 1U << 30) {
+        fprintf(stderr, "malloc: invalid size request %u\n", nbytes);
+        return NULL;
+    }
+
     // e.g. we need 16 bytes, header size of 8 bytes => need 2 payload units and 1 unit for header
     unsigned nunits = (nbytes+sizeof(Header)-1)/sizeof(Header) + 1;
 
